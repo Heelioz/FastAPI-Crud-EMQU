@@ -1,7 +1,7 @@
-from fastapi import FastAPI
+from fastapi import APIRouter
 from pydantic import BaseModel
 
-app = FastAPI()
+router= APIRouter( prefix= "/pc", tags=["PC"]) 
 
 # http://127.0.0.1:8000 url local
 
@@ -18,24 +18,22 @@ class PC(BaseModel):
 
 #Entidad User
 
-class User(BaseModel):
-    mail: str
-    password: str
+
 
 PC_list = [PC(id= 1, name ="HeliozPC", ip = "192.168.4.5", ping = True, count = 5),
            PC(id= 2, name ="SOFIPC", ip = "192.168.4.6", ping = True, count = 5),
            PC(id= 3, name ="HELLO", ip = "192.168.4.10", ping = True, count = 5)]
 
-users_list = [User( mail ="marcosjduque2@gmail.com", password = "12345")]
 
 
-@app.get('/pc/all')
+
+@router.get('/all')
 async def get_all_pc():
     return PC_list
 
    
 #Query
-@app.get("/pc/")
+@router.get("/")
 async def get_pc(name: str):
     return search_pc(name)
 
@@ -51,7 +49,7 @@ def search_pc(name :str):
 
 #Insercion nueva PC
 
-@app.post("/pc/")
+@router.post("/")
 async def create_pc(pc: PC):
     if type(search_pc(pc.name))== PC:
         return {"ERROR":"PC ya registrada"} #Valida que el objeto que devuelve la busqueda por nombre del objeto a registrarse no devuelva una pc registrada
@@ -59,7 +57,7 @@ async def create_pc(pc: PC):
     PC_list.append(pc)
     return pc
 
-@app.put("/pc/")
+@router.put("/")
 async def update_pc(pc: PC):
     
     if type(search_pc(pc.name)) == PC: 
@@ -74,7 +72,7 @@ async def update_pc(pc: PC):
     
     return {"error":"Pc actualizado"}, pc
     
-@app.delete("/pc/")
+@router.delete("/")
 async def update_pc(name: str):
     
     if type(search_pc(name)) == PC: 
