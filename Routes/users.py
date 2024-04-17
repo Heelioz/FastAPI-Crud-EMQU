@@ -8,3 +8,4 @@ class User(BaseModel):
     password: str
 
 users_list = [User( mail ="marcosjduque2@gmail.com", password = "12345")]
+
