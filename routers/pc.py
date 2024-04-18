@@ -16,27 +16,18 @@ class PC(BaseModel):
     ping: bool
     count: int
 
-#Entidad User
-
-
-
 PC_list = [PC(id= 1, name ="HeliozPC", ip = "192.168.4.5", ping = True, count = 5),
            PC(id= 2, name ="SOFIPC", ip = "192.168.4.6", ping = True, count = 5),
            PC(id= 3, name ="HELLO", ip = "192.168.4.10", ping = True, count = 5)]
 
-
-
-
 @router.get('/all')
 async def get_all_pc():
     return PC_list
-
-   
+  
 #Query
 @router.get("/")
 async def get_pc(name: str):
     return search_pc(name)
-
 
 #Busqueda de pc por nombre
 def search_pc(name :str):
