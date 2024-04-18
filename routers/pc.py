@@ -12,7 +12,6 @@ router= APIRouter( prefix= "/pc", tags=["PC"])
 #Entidad PC
 
 
-PC_list = []
 
 @router.get('/all', response_model=list[PC])
 async def get_all_pc():
@@ -48,24 +47,25 @@ async def create_pc(pc: PC):
 @router.put("/")
 async def update_pc(pc: PC):
     
-    if type(search_pc(pc.name)) == PC:  
 
-        for index, saved_pc in enumerate(PC_list):
-            if saved_pc.name == pc.name:
-                PC_list[index] = pc
-                found = True
+    pc_dict = dict(pc)
+    del pc_dict["id"]
+    
+    try:
+        db_client.local.pcs.find_one_and_replace({"ip": pc.ip}, pc_dict)
+    
+    except:
+        return {"Error" : "No se ha actualizado la PC"}
+    
+    return search_pc("ip", pc.ip)
 
-    else:
-        return {"error":"Pc no actualizado"}
-    
-    return {"error":"Pc actualizado"}, pc
-    
+
+   
 @router.delete("/")
-async def delete_pc(ip: str):
+async def delete_pc(field: str, key: str):
     
-    found = db_client.local.pcs.find_one_and_delete({"ip": ip})
+    found = db_client.local.pcs.find_one_and_delete({field: key})
     
-
     if not found:
         return {"error": "No se ha eliminado la PC"}
     
