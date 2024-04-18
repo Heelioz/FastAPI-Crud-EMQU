@@ -70,27 +70,13 @@ async def delete_pc(field: str, key: str):
 
     
     if found.get("count", 0) > 0:  
-        return {"error": "La PC no se puede eliminar porque ha sido sometida a una prueba de ping."}
+        return {"error": "La PC no se puede eliminar porque ha sido sometida a una o mas pruebas de ping."}
     else:
         found = db_client.pcs.find_one_and_delete({field: key})
 
     return {"Message": "PC eliminada"}
 
-@router.put("/ping")
-async def increment_pc_count(ip: str):
-    # Find the PC with the specified IP address
-    found_pc = db_client.pcs.find_one({"ip": ip})
 
-    if not found_pc:
-        return {"error": "PC no encontrada con la IP proporcionada."}
-
-    # Increment the count attribute
-    found_pc["count"] += 1
-
-    # Update the PC record in the database
-    db_client.pcs.find_one_and_replace({"ip": ip}, found_pc)
-
-    return {"Message": "Contador de PC incrementado para la IP " + ip}
     
 
 
