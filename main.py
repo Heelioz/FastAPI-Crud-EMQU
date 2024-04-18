@@ -1,6 +1,6 @@
 from fastapi import FastAPI
 from routers import pc, test
-from routers import  jwt_auth_users, jwt_bd
+from routers import  jwt_bd
 
 app = FastAPI()
 

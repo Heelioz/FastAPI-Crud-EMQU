@@ -6,7 +6,7 @@ from passlib.context import CryptContext
 from datetime import datetime, timedelta
 from pymongo import MongoClient
 
-# MongoDB connection details (replace with your actual credentials)
+# MongoDB connection details 
 MONGODB_URI = "mongodb+srv://EMQU:test@cluster0.jyg0ozp.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0"
 DATABASE_NAME = "test"
 USER_COLLECTION = "users"
@@ -19,7 +19,7 @@ ALGORITHM = "HS256"
 ACCESS_TOKEN_DURATION = 1
 SECRET = "c1e3bfdf347f294e25553b0a918fb053b2fd6c858e039865e7fbf2e3b76698b1"
 
-router = APIRouter()
+router = APIRouter(prefix= "/user", tags=["USER AUTH"])
 
 oauth2 = OAuth2PasswordBearer(tokenUrl="login")
 
@@ -85,7 +85,7 @@ async def current_user(user: User = Depends(auth_user)):
     return user
 
 
-@router.get("/user/me")
+@router.get("/me")
 async def me(user: User = Depends(current_user)):
     return user
 
@@ -99,7 +99,6 @@ async def login(form: OAuth2PasswordRequestForm = Depends()):
     if not crypt.verify(form.password, user_db.password):
         raise HTTPException(status_code=400, detail="Incorrect password")
 
-    # Extract username and email from form
     username = form.username
     email = user_db.email
 
@@ -125,16 +124,16 @@ async def signup(user_data: dict):
     if existing_email:
         raise HTTPException(status_code=400, detail="Correo electrónico ya existe")
 
-    # Create UserDB object (include password)
+    
     user_db = UserDB(**user_data)
 
-    # Hash the password before saving
+   
     user_db.password = crypt.hash(user_db.password)
 
-    # Convert UserDB object to dictionary
+   
     user_dict = user_db.dict()
 
-    # Insert the user document with the hashed password
+    
     user_collection.insert_one(user_dict)
 
     return {"message": "Usuario creado exitosamente"}
