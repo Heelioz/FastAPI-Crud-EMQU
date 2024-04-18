@@ -15,14 +15,14 @@ router= APIRouter( prefix= "/pc", tags=["PC"])
 
 @router.get('/all', response_model=list[PC])
 async def get_all_pc():
-    return pcs_schema(db_client.local.pcs.find())
+    return pcs_schema(db_client.pcs.find())
   
 
 #Busqueda de pc por ip
 @router.get('/')
 def search_pc(field: str, key: str):
     try:
-       pc = db_client.local.pcs.find_one({field: key})
+       pc = db_client.pcs.find_one({field: key})
        return PC(**pc_schema(pc))
     except:
         return "ERROR: PC no existente"
@@ -39,8 +39,8 @@ async def create_pc(pc: PC):
 
     del pc_dict["id"]
 
-    id = db_client.local.pcs.insert_one(pc_dict).inserted_id
-    new_pc = pc_schema(db_client.local.pcs.find_one({"_id": id}))
+    id = db_client.pcs.insert_one(pc_dict).inserted_id
+    new_pc = pc_schema(db_client.pcs.find_one({"_id": id}))
 
     return PC(**new_pc)
 
@@ -52,7 +52,7 @@ async def update_pc(pc: PC):
     del pc_dict["id"]
     
     try:
-        db_client.local.pcs.find_one_and_replace({"ip": pc.ip}, pc_dict)
+        db_client.pcs.find_one_and_replace({"ip": pc.ip}, pc_dict)
     
     except:
         return {"Error" : "No se ha actualizado la PC"}
@@ -63,7 +63,7 @@ async def update_pc(pc: PC):
    
 @router.delete("/")
 async def delete_pc(field: str, key: str):
-    found = db_client.local.pcs.find_one_and_delete({field: key})
+    found = db_client.pcs.find_one({field: key})
 
     if not found:
         return {"error": "No se ha eliminado la PC"}
@@ -71,8 +71,26 @@ async def delete_pc(field: str, key: str):
     
     if found.get("count", 0) > 0:  
         return {"error": "La PC no se puede eliminar porque ha sido sometida a una prueba de ping."}
+    else:
+        found = db_client.pcs.find_one_and_delete({field: key})
 
     return {"Message": "PC eliminada"}
+
+@router.put("/ping")
+async def increment_pc_count(ip: str):
+    # Find the PC with the specified IP address
+    found_pc = db_client.pcs.find_one({"ip": ip})
+
+    if not found_pc:
+        return {"error": "PC no encontrada con la IP proporcionada."}
+
+    # Increment the count attribute
+    found_pc["count"] += 1
+
+    # Update the PC record in the database
+    db_client.pcs.find_one_and_replace({"ip": ip}, found_pc)
+
+    return {"Message": "Contador de PC incrementado para la IP " + ip}
     
 
 
