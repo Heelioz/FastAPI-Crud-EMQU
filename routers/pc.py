@@ -1,5 +1,7 @@
 from fastapi import APIRouter
-from pydantic import BaseModel
+from db.models.pc_model import PC
+from db.client import db_client
+from db.schemas.pc_schema import pc_schema, pcs_schema
 
 router= APIRouter( prefix= "/pc", tags=["PC"]) 
 
@@ -9,32 +11,20 @@ router= APIRouter( prefix= "/pc", tags=["PC"])
 
 #Entidad PC
 
-class PC(BaseModel):
-    id: int
-    name: str
-    ip: str
-    ping: bool
-    count: int
 
-PC_list = [PC(id= 1, name ="HeliozPC", ip = "192.168.4.5", ping = True, count = 5),
-           PC(id= 2, name ="SOFIPC", ip = "192.168.4.6", ping = True, count = 5),
-           PC(id= 3, name ="HELLO", ip = "192.168.4.10", ping = True, count = 5)]
+PC_list = []
 
-@router.get('/all')
+@router.get('/all', response_model=list[PC])
 async def get_all_pc():
-    return PC_list
+    return pcs_schema(db_client.local.pcs.find())
   
-#Query
-@router.get("/")
-async def get_pc(name: str):
-    return search_pc(name)
 
-#Busqueda de pc por nombre
-def search_pc(name :str):
-    
-    pcs = filter(lambda pc: pc.name == name, PC_list)
+#Busqueda de pc por ip
+@router.get('/')
+def search_pc(field: str, key: str):
     try:
-        return list(pcs)[0]
+       pc = db_client.local.pcs.find_one({field: key})
+       return PC(**pc_schema(pc))
     except:
         return "ERROR: PC no existente"
 
@@ -42,16 +32,23 @@ def search_pc(name :str):
 
 @router.post("/")
 async def create_pc(pc: PC):
-    if type(search_pc(pc.name))== PC:
-        return {"ERROR":"PC ya registrada"} #Valida que el objeto que devuelve la busqueda por nombre del objeto a registrarse no devuelva una pc registrada
-    
-    PC_list.append(pc)
-    return pc
+   
+    if type(search_pc("ip", pc.ip)) == PC:
+        return "ERROR: PC ya registrada"
+
+    pc_dict=dict(pc)
+
+    del pc_dict["id"]
+
+    id = db_client.local.pcs.insert_one(pc_dict).inserted_id
+    new_pc = pc_schema(db_client.local.pcs.find_one({"_id": id}))
+
+    return PC(**new_pc)
 
 @router.put("/")
 async def update_pc(pc: PC):
     
-    if type(search_pc(pc.name)) == PC: 
+    if type(search_pc(pc.name)) == PC:  
 
         for index, saved_pc in enumerate(PC_list):
             if saved_pc.name == pc.name:
@@ -64,19 +61,17 @@ async def update_pc(pc: PC):
     return {"error":"Pc actualizado"}, pc
     
 @router.delete("/")
-async def update_pc(name: str):
+async def delete_pc(ip: str):
     
-    if type(search_pc(name)) == PC: 
- 
-        for index, saved_pc in enumerate(PC_list):
-            if saved_pc.name == name:
-                del PC_list[index]
-                found = True
+    found = db_client.local.pcs.find_one_and_delete({"ip": ip})
+    
 
-    else:
-        return {"error":"Pc no eliminada"}
+    if not found:
+        return {"error": "No se ha eliminado la PC"}
     
-    return {"error":"Pc eliminada"}
+    return {"Message" : "PC eliminada"}
+    
+
 
 
    
