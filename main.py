@@ -11,6 +11,5 @@ app = FastAPI()
 #Routes
 
 app.include_router(pc.router)
-#app.include_router(basic_auth_users.router)
 app.include_router(jwt_auth_users.router)
 
