@@ -47,7 +47,7 @@ async def create_pc(pc: PC):
 @router.put("/")
 async def update_pc(pc: PC):
     
-
+ 
     pc_dict = dict(pc)
     del pc_dict["id"]
     
@@ -57,19 +57,22 @@ async def update_pc(pc: PC):
     except:
         return {"Error" : "No se ha actualizado la PC"}
     
-    return search_pc("ip", pc.ip)
+    return {"Message" : " Se ha actualizado la PC"}, search_pc("ip", pc.ip)
 
 
    
 @router.delete("/")
 async def delete_pc(field: str, key: str):
-    
     found = db_client.local.pcs.find_one_and_delete({field: key})
-    
+
     if not found:
         return {"error": "No se ha eliminado la PC"}
+
     
-    return {"Message" : "PC eliminada"}
+    if found.get("count", 0) > 0:  
+        return {"error": "La PC no se puede eliminar porque ha sido sometida a una prueba de ping."}
+
+    return {"Message": "PC eliminada"}
     
 
 
