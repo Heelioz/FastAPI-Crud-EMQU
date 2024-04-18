@@ -1,7 +1,9 @@
 from fastapi import FastAPI
 from routers import pc
-from routers import basic_auth_users
+from routers import basic_auth_users, jwt_auth_users
 from pydantic import BaseModel
+from jose import jwt 
+from passlib.context import CryptContext
 
 
 app = FastAPI()
@@ -9,4 +11,5 @@ app = FastAPI()
 #Routes
 
 app.include_router(pc.router)
-app.include_router(basic_auth_users.router)
+#app.include_router(basic_auth_users.router)
+app.include_router(jwt_auth_users.router)

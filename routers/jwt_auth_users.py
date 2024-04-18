@@ -1,11 +1,18 @@
 from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel
 from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
+from jose import jwt 
+from passlib.context import CryptContext
+from datetime import datetime, timedelta
 
+ALGORITHM ="HS256"
+ACCESS_TOKEN_DURATION = 1
 
 router= APIRouter()
 
 oauth2 = OAuth2PasswordBearer(tokenUrl="login")
+
+crypt = CryptContext(schemes=["bcrypt"])
 
 class User(BaseModel):
     username: str
@@ -22,7 +29,7 @@ users_db = {
         "full_name": "Marcos Duque",
         "email": "marcosjduque2@gmail.com",
         "disabled": False,
-        "password": "123456" 
+        "password": "$2a$12$7OxAqIjlQ4jLEBrep1tZs.1LNVCvLJHHQRq7Dv4O3bYqlzmPy0.Ry" 
     },
     "marcosjduque3@gmail.com":{
         "username": "Sofi",
@@ -33,31 +40,11 @@ users_db = {
     },
 }
 
-def search_user(username: str):
-    if username in users_db:
-        return User(**users_db[username])
-
 def search_user_db(username: str):
     if username in users_db:
         return UserDB(**users_db[username])
     
-async def current_user(token: str = Depends(oauth2)):
-   user = search_user(token)
-   if not user:
-        raise HTTPException(
-            status_code=401, 
-            detail ="Credenciales de autenticacion invalidas", 
-            headers={"www-Authenticate": "Bearer"}) 
-   
-   if user.disabled:
-        raise HTTPException(
-            status_code=400, 
-            detail ="Usuario Inactivo", 
-            headers={"www-Authenticate": "Bearer"}) 
-   
-   return user
-       
-    
+
 @router.post("/login")
 async def login(form: OAuth2PasswordRequestForm = Depends()):
     user_db = users_db.get(form.username)
@@ -66,12 +53,18 @@ async def login(form: OAuth2PasswordRequestForm = Depends()):
             status_code=400, detail ="Usuario incorrecto")
     
     user = search_user_db(form.username)
-    if not form.password == user.password:
+
+    if not crypt.verify(form.password, user.password):
          raise HTTPException(
             status_code=400, detail ="Contraseña incorrecta")
     
-    return{"access_token": user.email  , "token_type": "bearer"}
+
+  
+    expired = datetime.utcnow() + timedelta(minutes=ACCESS_TOKEN_DURATION)
+
+    access_token = {"sub": user.email, 
+                    "exp": expired,
+                    }
     
-@router.get("/user/me")
-async def me(user: User = Depends(current_user)):
-    return user
+    return{"access_token": access_token , "token_type": "bearer"}
+    
